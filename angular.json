@@ -123,6 +123,10 @@
           }
         }
       }
-    }},
-  "defaultProject": "prevent-download-and-open-in-office-online"
+    }
+  },
+  "defaultProject": "prevent-download-and-open-in-office-online",
+  "cli": {
+    "analytics": "b6ae7a38-ca6c-4ce9-974c-107cb4d554a2"
+  }
 }
