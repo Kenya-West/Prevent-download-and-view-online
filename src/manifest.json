@@ -4,7 +4,8 @@
     "description": "This Chrome extensions prevents Office files from downloading and instead opens them at Office Online Viewer",
     "manifest_version": 2,
     "permissions": [
-        "downloads"
+        "downloads",
+        "tabs"
     ],
     "background": {
       "persistent": true,
