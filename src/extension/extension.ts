@@ -1,52 +1,48 @@
 class State {
-    fileUrl = "";
-    notFound = false;
-    tabId = "";
+    fileUrl: string;
+    notFound: boolean;
+    tabId: number;
 
     constructor() {
         this.fileUrl = "";
         this.notFound = false;
-        this.tabId = "";
+        this.tabId = 0;
     }
 }
 
-class officeExtensions {
-    static #word = ["doc", "docx", "docm"];
-    static #excel = ["xls", "xlsx", "xlsm", "xlsb", "csv"];
-    static #powerpoint = ["ppt", "pptx", "pptm"];
-    static #visio = ["vsd", "vsdx", "vsdm", "vssx", "vssm", "vstx", "vstm"];
+class OfficeExtensions {
+    private static word = ["doc", "docx", "docm"];
+    private static excel = ["xls", "xlsx", "xlsm", "xlsb", "csv"];
+    private static powerpoint = ["ppt", "pptx", "pptm"];
+    private static visio = ["vsd", "vsdx", "vsdm", "vssx", "vssm", "vstx", "vstm"];
 
-    static getAll() {
-        return this.#word.concat(this.#excel, this.#powerpoint, this.#visio);
+    public static getAll() {
+        return this.word.concat(this.excel, this.powerpoint, this.visio);
     }
 }
 
 class OfficeOnline {
-    static #strOfficeHost = "view.officeapps.live.com";
-    static #strViewOfficeUrl = "/op/view.aspx?src=";
-    static #strNotFound = "/op/filenotfound.htm"
+    private static strOfficeHost = "view.officeapps.live.com";
+    private static strViewOfficeUrl = "/op/view.aspx?src=";
+    private static strNotFound = "/op/filenotfound.htm";
 
-    static getUrl() {
-        return "https://" + this.#strOfficeHost + this.#strViewOfficeUrl;
+    public static getUrl(): string {
+        return "https://" + this.strOfficeHost + this.strViewOfficeUrl;
     }
 
-    static getHost() {
-        return "https://" + this.#strOfficeHost;
+    public static getHost(): string {
+        return "https://" + this.strOfficeHost;
     }
 
-    static getOpenedUrlPart() {
-        return this.#strViewOfficeUrl;
+    public static getOpenedUrlPart(): string {
+        return this.strViewOfficeUrl;
     }
 
-    static getNotFoundUrl() {
-        return "https://" + this.#strOfficeHost + this.#strNotFound;
+    static getNotFoundUrl(): string {
+        return "https://" + this.strOfficeHost + this.strNotFound;
     }
 
-    static saveDocumentUrl(url) {
-        return null
-    }
-
-    static createUrl(url) {
+    static createUrl(url): URL {
         return new URL(location.href);
     }
 }
@@ -57,7 +53,7 @@ chrome.downloads.onCreated.addListener(downloadItem => {
     const url = downloadItem.finalUrl;
     console.debug(`Start downloading a file by ${url}`);
     if (
-        officeExtensions.getAll().includes(url?.split(".").pop()) &&
+        OfficeExtensions.getAll().includes(url?.split(".").pop()) &&
         !url?.includes(OfficeOnline.getHost()) &&
         !state?.notFound
     ) {
@@ -69,13 +65,14 @@ chrome.downloads.onCreated.addListener(downloadItem => {
                 state.fileUrl = url;
                 state.notFound = false;
             });
-        })
+        });
     }
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (tabId === state.tabId) {
         console.debug(`Found an updated tab with id: ${tabId}`);
+
         if (changeInfo?.url?.includes(OfficeOnline.getUrl())) {
             try {
                 const url = new URL(changeInfo?.url);
@@ -87,7 +84,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
                     console.debug(`changeInfo?.url is: ${changeInfo?.url}`);
                 }
             } catch (error) {
-                console.error(`changeInfo.url is not valid! ${changeInfo?.url}`)
+                console.error(`changeInfo.url is not valid! ${changeInfo?.url}`);
             }
         } else if (changeInfo?.url?.includes(OfficeOnline.getNotFoundUrl())) {
             state.notFound = true;
@@ -97,11 +94,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
                     url: state.fileUrl
                 }, (downloadId) => {
                     state.notFound = false;
-                })
+                });
             } else {
                 console.error(`No link to download!`);
             }
         }
+
     }
 
 });
