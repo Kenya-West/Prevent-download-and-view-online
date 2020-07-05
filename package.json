@@ -1,10 +1,13 @@
 {
   "name": "prevent-download-and-office-online",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build-windows": "npm run build-ng && npm run build-ts",
+    "build-ts": "cd ./src/extension/ && tsc",
+    "build-ng": "ng build --prod",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
