@@ -47,11 +47,17 @@ class OfficeOnline {
     }
 }
 
+enum broswerNativeFormats {
+    pdf = "pdf"
+}
+
 const state = new State();
 
 chrome.downloads.onCreated.addListener(downloadItem => {
     const url = downloadItem.finalUrl;
     console.debug(`Start downloading a file by ${url}`);
+
+    // if they are Office files
     if (
         OfficeExtensions.getAll().includes(url?.split(".").pop()) &&
         !url?.includes(OfficeOnline.getHost()) &&
@@ -63,6 +69,17 @@ chrome.downloads.onCreated.addListener(downloadItem => {
                 console.debug(`Create a tab with id: ${tab.id}`);
                 state.tabId = tab.id;
                 state.fileUrl = url;
+                state.notFound = false;
+            });
+        });
+    }
+
+    // if this is a pdf file or a file that can be opened in a tab
+    if (url?.split(".").pop() === broswerNativeFormats.pdf) {
+        console.debug(`Cancel download`);
+        state.notFound = true; // disable pdf opening
+        chrome.downloads.cancel(downloadItem.id, () => {
+            chrome.tabs.create({ url }, (tab) => {
                 state.notFound = false;
             });
         });
