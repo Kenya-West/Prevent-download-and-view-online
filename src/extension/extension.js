@@ -55,7 +55,7 @@ const state = new State();
 
 chrome.downloads.onCreated.addListener(downloadItem => {
     const url = downloadItem.finalUrl;
-    console.debug(`Start downloading a file by ${url}. Info: !url?.includes(OfficeOnline.getHost(): ${!url?.includes(OfficeOnline.getHost())}`);
+    console.debug(`Start downloading a file by ${url}`);
     if (
         officeExtensions.getAll().includes(url?.split(".").pop()) &&
         !url?.includes(OfficeOnline.getHost()) &&
