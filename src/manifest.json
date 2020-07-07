@@ -1,19 +1,24 @@
 {
-    "name": "Prevent download and open in Office Online",
-    "version": "0.2",
-    "description": "This Chrome extensions prevents Office files from downloading and instead opens them at Office Online Viewer",
-    "manifest_version": 2,
-    "permissions": [
-        "downloads",
-        "tabs",
-        "webRequest",
-        "webRequestBlocking",
-        "activeTab",
-        "declarativeContent",
-        "<all_urls>"
-    ],
-    "background": {
-      "persistent": true,
-      "scripts": ["/extension/extension.js"]
-    }
+  "name": "Prevent download and open in Office Online",
+  "version": "1.0",
+  "description": "This Chrome extensions prevents Office files from downloading and instead opens them at Office Online Viewer",
+  "manifest_version": 2,
+  "permissions": [
+    "downloads",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "activeTab",
+    "declarativeContent",
+    "<all_urls>"
+  ],
+  "background": {
+    "persistent": true,
+    "scripts": [
+      "/extension/extension.js"
+    ]
+  },
+  "browser_action": {
+    "default_popup": "index.html"
+  }
 }
