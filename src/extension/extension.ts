@@ -127,31 +127,6 @@ chrome.downloads.onCreated.addListener(downloadItem => {
 
 });
 
-chrome.webRequest.onHeadersReceived.addListener((details) => {
-    if (details.url.split(".").pop() in broswerNativeFormats) {
-        console.debug(`Processing the request at url ${details.url}`);
-        const fileExtension = details.url.split(".").pop();
-        const response = {
-            responseHeaders: null
-        };
-        const headers = details.responseHeaders;
-        headers.map((httpHeader) => {
-            if (httpHeader.name === "Content-Disposition" && httpHeader.value.includes("attachment")) {
-                console.debug(`Found Content-Disposition. Header is modified`);
-                httpHeader.value = "inline";
-            }
-            if (httpHeader.name === "Content-Type" && httpHeader.value.includes("application/x-forcedownload")) {
-                console.debug(`Found Content-Type. Header is modified`);
-                httpHeader.value = broswerNativeMIME[fileExtension];
-            }
-        });
-        response.responseHeaders = headers;
-        console.debug(`Headers are modified compeletely. The response headers are:`);
-        console.debug(response.responseHeaders);
-        return response;
-    }
-}, { urls: ["<all_urls>"], types: ["main_frame"] }, ["blocking", "responseHeaders"]);
-
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (tabId === state.tabId) {
         console.debug(`Found an updated tab with id: ${tabId}`);
@@ -186,3 +161,28 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
 
 });
+
+chrome.webRequest.onHeadersReceived.addListener((details) => {
+    if (details.url.split(".").pop() in broswerNativeFormats) {
+        console.debug(`Processing the request at url ${details.url}`);
+        const fileExtension = details.url.split(".").pop();
+        const response = {
+            responseHeaders: null
+        };
+        const headers = details.responseHeaders;
+        headers.map((httpHeader) => {
+            if (httpHeader.name === "Content-Disposition" && httpHeader.value.includes("attachment")) {
+                console.debug(`Found Content-Disposition. Header is modified`);
+                httpHeader.value = "inline";
+            }
+            if (httpHeader.name === "Content-Type" && httpHeader.value.includes("application/x-forcedownload")) {
+                console.debug(`Found Content-Type. Header is modified`);
+                httpHeader.value = broswerNativeMIME[fileExtension];
+            }
+        });
+        response.responseHeaders = headers;
+        console.debug(`Headers are modified compeletely. The response headers are:`);
+        console.debug(response.responseHeaders);
+        return response;
+    }
+}, { urls: ["<all_urls>"], types: ["main_frame"] }, ["blocking", "responseHeaders"]);
