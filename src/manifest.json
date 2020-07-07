@@ -5,7 +5,12 @@
     "manifest_version": 2,
     "permissions": [
         "downloads",
-        "tabs"
+        "tabs",
+        "webRequest",
+        "webRequestBlocking",
+        "activeTab",
+        "declarativeContent",
+        "<all_urls>"
     ],
     "background": {
       "persistent": true,

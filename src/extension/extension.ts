@@ -2,11 +2,17 @@ class State {
     fileUrl: string;
     notFound: boolean;
     tabId: number;
+    nativeOpener: {
+        pdf: boolean;
+    };
 
     constructor() {
         this.fileUrl = "";
         this.notFound = false;
         this.tabId = 0;
+        this.nativeOpener = {
+            pdf: false
+        };
     }
 }
 
@@ -48,7 +54,52 @@ class OfficeOnline {
 }
 
 enum broswerNativeFormats {
-    pdf = "pdf"
+    // documents
+    pdf = "pdf",
+    // images
+    jpg = "jpg",
+    jpeg = "jpeg",
+    png = "png",
+    gif = "gif",
+    tiff = "tiff",
+    webp = "webp",
+    // sound
+    mp3 = "mp3",
+    wav = "wav",
+    ogg = "ogg",
+    // video
+    mp4 = "mp4",
+    webm = "webm",
+    // other
+    woff = "woff",
+    css = "css",
+    htm = "htm",
+    html = "html",
+    js = "js"
+}
+enum broswerNativeMIME {
+    // documents
+    pdf = "application/pdf",
+    // images
+    jpg = "image/jpg",
+    jpeg = "image/jpeg",
+    png = "image/png",
+    gif = "image/gif",
+    tiff = "image/tiff",
+    webp = "image/webp",
+    // sound
+    mp3 = "audio/mp3",
+    wav = "audio/wav",
+    ogg = "audio/ogg",
+    // video
+    mp4 = "video/mp4",
+    webm = "video/webm",
+    // other
+    woff = "application/font-woff",
+    css = "text/css",
+    htm = "text/htm",
+    html = "text/html",
+    js = "text/javascript"
 }
 
 const state = new State();
@@ -74,17 +125,32 @@ chrome.downloads.onCreated.addListener(downloadItem => {
         });
     }
 
-    // if this is a pdf file or a file that can be opened in a tab
-    if (url?.split(".").pop() === broswerNativeFormats.pdf) {
-        console.debug(`Cancel download`);
-        state.notFound = true; // disable pdf opening
-        chrome.downloads.cancel(downloadItem.id, () => {
-            chrome.tabs.create({ url }, (tab) => {
-                state.notFound = false;
-            });
-        });
-    }
 });
+
+chrome.webRequest.onHeadersReceived.addListener((details) => {
+    if (details.url.split(".").pop() in broswerNativeFormats) {
+        console.debug(`Processing the request at url ${details.url}`);
+        const fileExtension = details.url.split(".").pop();
+        const response = {
+            responseHeaders: null
+        };
+        const headers = details.responseHeaders;
+        headers.map((httpHeader) => {
+            if (httpHeader.name === "Content-Disposition" && httpHeader.value.includes("attachment")) {
+                console.debug(`Found Content-Disposition. Header is modified`);
+                httpHeader.value = "inline";
+            }
+            if (httpHeader.name === "Content-Type" && httpHeader.value.includes("application/x-forcedownload")) {
+                console.debug(`Found Content-Type. Header is modified`);
+                httpHeader.value = broswerNativeMIME[fileExtension];
+            }
+        });
+        response.responseHeaders = headers;
+        console.debug(`Headers are modified compeletely. The response headers are:`);
+        console.debug(response.responseHeaders);
+        return response;
+    }
+}, { urls: ["<all_urls>"], types: ["main_frame"] }, ["blocking", "responseHeaders"]);
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (tabId === state.tabId) {
