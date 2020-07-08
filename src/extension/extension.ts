@@ -1,6 +1,6 @@
 class State {
     fileUrl: string;
-    notFound: boolean;
+    doNotDownload: boolean;
     tabId: number;
     nativeOpener: {
         pdf: boolean;
@@ -8,7 +8,7 @@ class State {
 
     constructor() {
         this.fileUrl = "";
-        this.notFound = false;
+        this.doNotDownload = false;
         this.tabId = 0;
         this.nativeOpener = {
             pdf: false
@@ -47,9 +47,145 @@ class OfficeOnline {
     static getNotFoundUrl(): string {
         return "https://" + this.strOfficeHost + this.strNotFound;
     }
+}
 
-    static createUrl(url): URL {
-        return new URL(location.href);
+class ChromeTools {
+    public cancelDownloadAndOpenTab(downloadItemId: number, url: URL, media?: boolean): void {
+        if (!media) {
+            chrome.downloads.cancel(downloadItemId, () => {
+                chrome.tabs.create({ url: OfficeOnline.getUrl() + url.href }, (tab) => {
+                    console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
+                    state.tabId = tab.id;
+                    state.fileUrl = url.href;
+                    state.doNotDownload = false;
+                });
+            });
+        } else {
+            chrome.downloads.cancel(downloadItemId, () => {
+                chrome.tabs.create({ url: url.href }, (tab) => {
+                    console.info(`Create a tab for native browser media file with id: ${tab.id}`);
+                    state.doNotDownload = false;
+                });
+            });
+        }
+    }
+
+    public cancelDownload(downloadItemId: number): void {
+        chrome.downloads.cancel(downloadItemId, () => { });
+    }
+
+    public decideUrl(url1: URL, url2: URL): URL {
+        const urlStart = url1;
+        const urlFinal = url2;
+        console.info(`Detected download of a file. Decide which url is true:\n    url: "${urlStart.href}"\n    or finalUrl: "${urlFinal.href}"`);
+
+        let decidedUrl: URL;
+        if (urlStart && OfficeExtensions.getAll().includes(urlStart.href?.split(".").pop())) { decidedUrl = urlStart; }
+        if (urlFinal && OfficeExtensions.getAll().includes(urlFinal.href?.split(".").pop())) { decidedUrl = urlFinal; }
+        if (urlStart && (Object.values(broswerNativeFormats) as Array<string>).includes(urlStart.href?.split(".").pop())) { decidedUrl = urlStart; }
+        if (urlFinal && (Object.values(broswerNativeFormats) as Array<string>).includes(urlFinal.href?.split(".").pop())) { decidedUrl = urlFinal; }
+
+        return decidedUrl;
+    }
+
+    public findHeaders(details?: chrome.webRequest.WebResponseHeadersDetails): HttpHeader[] {
+        if (details.url.split(".").pop() in broswerNativeFormats) {
+            console.info("%c%s", "color: #2279CB", `Processing the request at url ${details.url}`);
+            const fileExtension = details.url.split(".").pop();
+            const response = {
+                responseHeaders: null
+            };
+            const headers = details.responseHeaders;
+
+            const headersFound: HttpHeader[] = [];
+            headers.map((httpHeader) => {
+                httpHeadersToFind.map((httpHeaderToFind) => {
+                    if (httpHeaderToFind.key === httpHeader.name
+                        && httpHeaderToFind.value === httpHeader.value) {
+                            headersFound.push();
+                    }
+                });
+            });
+            return headersFound;
+        }
+    }
+    public fixHeaders(details?: chrome.webRequest.WebResponseHeadersDetails): any {
+        if (details.url.split(".").pop() in broswerNativeFormats) {
+            console.info("%c%s", "color: #2279CB", `Processing the request at url ${details.url}`);
+            const fileExtension = details.url.split(".").pop();
+            const response = {
+                responseHeaders: null
+            };
+            const headers = details.responseHeaders;
+
+            let modified = false;
+            headers.map((httpHeader) => { // iterate headers
+                if (httpHeader.name === "Content-Disposition" && httpHeader.value.includes("attachment")) {
+                    console.info("%c%s", "color: #2279CB", `Found Content-Disposition. Header is modified`);
+                    httpHeader.value = "inline";
+                    modified = true;
+                }
+                if (httpHeader.name === "Content-Type" && httpHeader.value.includes("application/x-forcedownload")) {
+                    console.info("%c%s", "color: #2279CB", `Found Content-Type. Header is modified`);
+                    httpHeader.value = broswerNativeMIME[fileExtension];
+                    modified = true;
+                }
+            });
+            if (modified) {
+                response.responseHeaders = headers;
+                console.info("%c%s", "color: #2279CB", `Headers are modified compeletely. The response headers are:`);
+                console.info("%c%s", "color: #2279CB", "response.responseHeaders:", response.responseHeaders);
+            }
+            return response;
+        }
+    }
+}
+
+class UrlTools {
+    public static sanitizeUrl(url: URL, skipLog?: boolean): URL {
+        try {
+            skipLog === false ?? console.info("%c%s", "padding-left: 2rem;", `Sanitized URL out from:\n"${url.href}"\nand got:\n"${new URL(url.protocol + "//" + url.host + url.pathname).href}"`);
+            return new URL(url.protocol + "//" + url.host + url.pathname);
+        } catch (error) {
+            throw new Error("Couldn't convert URL");
+        }
+    }
+
+    public static createUrl(url: string, skipLog?: boolean): URL {
+        try {
+            skipLog === false ?? console.info("%c%s", "padding-left: 2rem;", `Created URL from string:\n"${url}"\nand got URL object with href:\n"${new URL(url).href}"`);
+            return new URL(url);
+        } catch (error) {
+            throw new Error("Couldn't convert URL");
+        }
+    }
+}
+
+interface IHTttpHeader {
+    key: string;
+    value: string;
+    keyReplace?: string;
+    valueReplace?: string;
+    relpaceWith(): void;
+}
+
+class HttpHeader implements IHTttpHeader {
+    key: string;
+    value: string;
+    keyReplace?: string;
+    valueReplace?: string;
+
+    relpaceWith(): void {
+        if (this.keyReplace) {
+            this.key = this.keyReplace;
+        }
+        if (this.valueReplace) {
+            this.value = this.valueReplace;
+        }
+    }
+
+    constructor(init?: Partial<HttpHeader>) {
+        Object.assign(this, init);
     }
 }
 
@@ -103,58 +239,76 @@ enum broswerNativeMIME {
 }
 
 const state = new State();
+const chromeTools = new ChromeTools();
+const httpHeadersToFind: HttpHeader[] = [
+    new HttpHeader(
+        {
+            key: "Content-Type",
+            value: "application/x-forcedownload",
+            valueReplace: "application/pdf"
+        }),
+    new HttpHeader(
+        {
+            key: "Content-Disposition",
+            value: "attachment",
+            valueReplace: "inline"
+        })
+];
 
 chrome.downloads.onCreated.addListener(downloadItem => {
-    const url = downloadItem.finalUrl;
-    console.debug(`Start downloading a file by ${url}`);
+    state?.doNotDownload ?? console.info("%c%s", "color: #D73B02", `Since file is not found, then download it`);
 
-    // if they are Office files
-    if (
-        OfficeExtensions.getAll().includes(url?.split(".").pop()) &&
-        !url?.includes(OfficeOnline.getHost()) &&
-        !state?.notFound
-    ) {
-        console.debug(`Cancel download`);
-        chrome.downloads.cancel(downloadItem.id, () => {
-            chrome.tabs.create({ url: OfficeOnline.getUrl() + url }, (tab) => {
-                console.debug(`Create a tab with id: ${tab.id}`);
-                state.tabId = tab.id;
-                state.fileUrl = url;
-                state.notFound = false;
-            });
-        });
+    if (!state?.doNotDownload) {
+
+        const decidedUrl = chromeTools.decideUrl(
+            UrlTools.sanitizeUrl(UrlTools.createUrl(downloadItem.url)),
+            UrlTools.sanitizeUrl(UrlTools.createUrl(downloadItem.finalUrl))
+        );
+
+        console.info(`Decided URL is:\n    "${decidedUrl?.href}"`);
+        // if they are Office files
+        if (!decidedUrl?.href?.includes(OfficeOnline.getHost())) {
+            if (OfficeExtensions.getAll().includes(decidedUrl.href.split(".").pop())) {
+                console.info("%c%s", "color: #D73B02", `Recognized an Office file. Cancel download`);
+                chromeTools.cancelDownloadAndOpenTab(downloadItem.id, decidedUrl);
+            }
+            if ((Object.values(broswerNativeFormats) as Array<string>).includes(decidedUrl.href.split(".").pop())) {
+                console.info("%c%s", "color: #D73B02", `Recognized a media file. Cancel download`);
+                chromeTools.cancelDownload(downloadItem.id);
+            }
+        }
+
     }
-
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (tabId === state.tabId) {
-        console.debug(`Found an updated tab with id: ${tabId}`);
+    if (tab.url.includes(OfficeOnline.getHost())) {
+        console.info("%c%s", "color: #D73B02", `Found an updated tab with id: ${tabId} and URL:\n"${tab.url}"`);
 
         if (changeInfo?.url?.includes(OfficeOnline.getUrl())) {
             try {
-                const url = new URL(changeInfo?.url);
+                const url = UrlTools.createUrl(changeInfo?.url);
                 if (url?.searchParams?.get("src")) {
                     state.fileUrl = url.searchParams.get("src");
-                    state.notFound = false;
-                    console.debug(`Found a link for file displaying: ${state.fileUrl}`);
+                    state.doNotDownload = false;
+                    console.info("%c%s", "color: #D73B02", `Found a link for file displaying:\n"${state.fileUrl}"`);
                 } else {
-                    console.debug(`changeInfo?.url is: ${changeInfo?.url}`);
+                    console.info("%c%s", "color: #D73B02", `changeInfo?.url is:\n"${changeInfo?.url}"`);
                 }
             } catch (error) {
-                console.error(`changeInfo.url is not valid! ${changeInfo?.url}`);
+                console.warn(`changeInfo.url is not valid at path:\n"${changeInfo?.url}"`);
             }
         } else if (changeInfo?.url?.includes(OfficeOnline.getNotFoundUrl())) {
-            state.notFound = true;
+            state.doNotDownload = true;
             if (state.fileUrl) {
-                console.debug(`The file on URL ${state.fileUrl} is not available, attempting to download`);
+                console.info("%c%s", "color: #D73B02", `The file on URL:\n"${state.fileUrl}"\nis not available, attempting to download`);
                 chrome.downloads.download({
                     url: state.fileUrl
                 }, (downloadId) => {
-                    state.notFound = false;
+                    state.doNotDownload = false;
                 });
             } else {
-                console.error(`No link to download!`);
+                console.warn(`No link to download!`);
             }
         }
 
@@ -163,26 +317,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.webRequest.onHeadersReceived.addListener((details) => {
-    if (details.url.split(".").pop() in broswerNativeFormats) {
-        console.debug(`Processing the request at url ${details.url}`);
-        const fileExtension = details.url.split(".").pop();
-        const response = {
-            responseHeaders: null
-        };
-        const headers = details.responseHeaders;
-        headers.map((httpHeader) => {
-            if (httpHeader.name === "Content-Disposition" && httpHeader.value.includes("attachment")) {
-                console.debug(`Found Content-Disposition. Header is modified`);
-                httpHeader.value = "inline";
-            }
-            if (httpHeader.name === "Content-Type" && httpHeader.value.includes("application/x-forcedownload")) {
-                console.debug(`Found Content-Type. Header is modified`);
-                httpHeader.value = broswerNativeMIME[fileExtension];
-            }
-        });
-        response.responseHeaders = headers;
-        console.debug(`Headers are modified compeletely. The response headers are:`);
-        console.debug(response.responseHeaders);
-        return response;
-    }
+
+    return chromeTools.fixHeaders(details);
+
 }, { urls: ["<all_urls>"], types: ["main_frame"] }, ["blocking", "responseHeaders"]);
