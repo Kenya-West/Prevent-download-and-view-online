@@ -90,7 +90,7 @@ class ChromeTools {
 
     public findHeaders(details?: chrome.webRequest.WebResponseHeadersDetails): HttpHeader[] {
         if (details.url.split(".").pop() in broswerNativeFormats) {
-            console.info("%c%s", "color: #2279CB", `Processing the request at url ${details.url}`);
+            console.info("%c%s", "color: #2279CB", `Finding headers at url ${details.url}`);
             const fileExtension = details.url.split(".").pop();
             const response = {
                 responseHeaders: null
@@ -102,16 +102,81 @@ class ChromeTools {
                 httpHeadersToFind.map((httpHeaderToFind) => {
                     if (httpHeaderToFind.key === httpHeader.name
                         && httpHeaderToFind.value === httpHeader.value) {
-                            headersFound.push();
+                        headersFound.push();
                     }
                 });
             });
             return headersFound;
         }
     }
+
+    public recognizeFileExtension(details: chrome.webRequest.WebResponseHeadersDetails): broswerNativeFormats {
+        // There are 3 possible ways to find file name and extension
+        console.info("%c%s", "color: #2279CB", `Recognizing file extension at url:\n"${details.url}"`);
+
+        const resultByDetailsUrl = byDetailsUrl(details.url);
+        console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Result by details.url is: ${resultByDetailsUrl}`);
+        const resultByContentDisposition = byContentDisposition(details.responseHeaders.find(header => header.name === "content-disposition")?.value);
+        console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Result by details.responseHeaders.content-disposition is: ${resultByContentDisposition}`);
+        const resultByContentType = byContentType(details.responseHeaders.find(header => header.name === "content-type")?.value);
+        console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Result by details.responseHeaders.content-type is: ${resultByContentType}`);
+
+        const extension = resultByDetailsUrl || resultByContentDisposition || resultByContentType;
+
+        return broswerNativeFormats[extension];
+
+        function byDetailsUrl(url: string): string | null {
+            return byFileName(url);
+        }
+        function byContentDisposition(contentDisposition: string): string | null {
+            // https://stackoverflow.com/a/52738125/4846392
+            const regex = /filename[^;=\n]*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/i;
+            const result = regex.exec(contentDisposition);
+            if (result) { return byFileName(result[3]) || byFileName(result[2]); }
+            return null;
+        }
+
+        function byContentType(contentType: string): string | null {
+            const keys = Object.keys(broswerNativeMIME).filter((key) => broswerNativeMIME[key] === contentType);
+            return keys.length > 0 ? keys[0] : null;
+        }
+
+        function byFileName(url: string): string | null {
+            const fileExtension = url?.split(".").pop();
+            if (fileExtension in broswerNativeFormats) {
+                return fileExtension;
+            }
+            return null;
+        }
+
+    }
+    public modifyHeaders(details: chrome.webRequest.WebResponseHeadersDetails,
+        fileExtension: broswerNativeFormats): IOnHeadersReceivedResult {
+        console.info("%c%s", "color: #2279CB", `Processing the request at url:\n"${details.url}"`);
+        const headers = details.responseHeaders;
+        headers.map((httpHeader) => {
+            if (httpHeader.name.toLowerCase() === "Content-Disposition".toLowerCase()
+                && httpHeader.value.toLowerCase().includes("attachment")) {
+                httpHeader.value = httpHeader.value.toLowerCase().replace("attachment", "inline");
+                console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Found ${httpHeader.name}. Header is modified with value ${httpHeader.value}`);
+            }
+            if (httpHeader.name.toLowerCase() === "Content-Type".toLowerCase()) {
+                httpHeader.value = httpHeader.value.toLowerCase().replace("application/x-forcedownload", `${broswerNativeMIME[fileExtension]}`);
+                httpHeader.value = httpHeader.value.toLowerCase().replace("application/octet-stream", `${broswerNativeMIME[fileExtension]}`);
+                console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Found ${httpHeader.name}. Header is modified with value ${httpHeader.value}`);
+            }
+        });
+
+        const result: IOnHeadersReceivedResult = {
+            responseHeaders: headers
+        };
+
+        return result;
+    }
+
     public fixHeaders(details?: chrome.webRequest.WebResponseHeadersDetails): any {
         if (details.url.split(".").pop() in broswerNativeFormats) {
-            console.info("%c%s", "color: #2279CB", `Processing the request at url ${details.url}`);
+            console.info("%c%s", "color: #2279CB", `Processing the request at url:\n"${details.url}"`);
             const fileExtension = details.url.split(".").pop();
             const response = {
                 responseHeaders: null
@@ -167,6 +232,10 @@ interface IHTttpHeader {
     keyReplace?: string;
     valueReplace?: string;
     relpaceWith(): void;
+}
+
+interface IOnHeadersReceivedResult {
+    responseHeaders: chrome.webRequest.HttpHeader[];
 }
 
 class HttpHeader implements IHTttpHeader {
@@ -255,31 +324,31 @@ const httpHeadersToFind: HttpHeader[] = [
         })
 ];
 
-chrome.downloads.onCreated.addListener(downloadItem => {
-    state?.doNotDownload ?? console.info("%c%s", "color: #D73B02", `Since file is not found, then download it`);
+// chrome.downloads.onCreated.addListener(downloadItem => {
+//     state?.doNotDownload ?? console.info("%c%s", "color: #D73B02", `Since file is not found, then download it`);
 
-    if (!state?.doNotDownload) {
+//     if (!state?.doNotDownload) {
 
-        const decidedUrl = chromeTools.decideUrl(
-            UrlTools.sanitizeUrl(UrlTools.createUrl(downloadItem.url)),
-            UrlTools.sanitizeUrl(UrlTools.createUrl(downloadItem.finalUrl))
-        );
+//         const decidedUrl = chromeTools.decideUrl(
+//             UrlTools.sanitizeUrl(UrlTools.createUrl(downloadItem.url)),
+//             UrlTools.sanitizeUrl(UrlTools.createUrl(downloadItem.finalUrl))
+//         );
 
-        console.info(`Decided URL is:\n    "${decidedUrl?.href}"`);
-        // if they are Office files
-        if (!decidedUrl?.href?.includes(OfficeOnline.getHost())) {
-            if (OfficeExtensions.getAll().includes(decidedUrl.href.split(".").pop())) {
-                console.info("%c%s", "color: #D73B02", `Recognized an Office file. Cancel download`);
-                chromeTools.cancelDownloadAndOpenTab(downloadItem.id, decidedUrl);
-            }
-            if ((Object.values(broswerNativeFormats) as Array<string>).includes(decidedUrl.href.split(".").pop())) {
-                console.info("%c%s", "color: #D73B02", `Recognized a media file. Cancel download`);
-                chromeTools.cancelDownload(downloadItem.id);
-            }
-        }
+//         console.info(`Decided URL is:\n    "${decidedUrl?.href}"`);
+//         // if they are Office files
+//         if (!decidedUrl?.href?.includes(OfficeOnline.getHost())) {
+//             if (OfficeExtensions.getAll().includes(decidedUrl.href.split(".").pop())) {
+//                 console.info("%c%s", "color: #D73B02", `Recognized an Office file. Cancel download`);
+//                 chromeTools.cancelDownloadAndOpenTab(downloadItem.id, decidedUrl);
+//             }
+//             if ((Object.values(broswerNativeFormats) as Array<string>).includes(decidedUrl.href.split(".").pop())) {
+//                 console.info("%c%s", "color: #D73B02", `Recognized a media file. Cancel download`);
+//                 chromeTools.cancelDownload(downloadItem.id);
+//             }
+//         }
 
-    }
-});
+//     }
+// });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (tab.url.includes(OfficeOnline.getHost())) {
@@ -317,7 +386,11 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.webRequest.onHeadersReceived.addListener((details) => {
-
-    return chromeTools.fixHeaders(details);
+    const fileExtension = chromeTools.recognizeFileExtension(details);
+    console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
+    if (fileExtension) {
+        return chromeTools.modifyHeaders(details, fileExtension);
+    }
+    return null;
 
 }, { urls: ["<all_urls>"], types: ["main_frame"] }, ["blocking", "responseHeaders"]);
