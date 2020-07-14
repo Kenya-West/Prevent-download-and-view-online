@@ -106,6 +106,7 @@ class ChromeTools {
         }
 
         function byFileName(url: string): string | null {
+            const fileExtension = UrlTools.sanitizeUrl(UrlTools.createUrl(url)).href.split(".").pop();
             if (fileExtension in broswerNativeFileExtensions) {
                 return fileExtension;
             }
