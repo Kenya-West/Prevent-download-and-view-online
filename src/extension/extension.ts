@@ -123,7 +123,7 @@ class ChromeTools {
 
         const extension = resultByDetailsUrl || resultByContentDisposition || resultByContentType;
 
-        return broswerNativeFormats[extension];
+        return broswerNativeFileExtensions[extension];
 
         function byDetailsUrl(url: string): string | null {
             return byFileName(url);
@@ -137,13 +137,12 @@ class ChromeTools {
         }
 
         function byContentType(contentType: string): string | null {
-            const keys = Object.keys(broswerNativeMIME).filter((key) => broswerNativeMIME[key] === contentType);
+            const keys = Object.keys(broswerNativeFileMIME).filter((key) => broswerNativeFileMIME[key] === contentType);
             return keys.length > 0 ? keys[0] : null;
         }
 
         function byFileName(url: string): string | null {
-            const fileExtension = url?.split(".").pop();
-            if (fileExtension in broswerNativeFormats) {
+            if (fileExtension in broswerNativeFileExtensions) {
                 return fileExtension;
             }
             return null;
@@ -151,7 +150,7 @@ class ChromeTools {
 
     }
     public modifyHeaders(details: chrome.webRequest.WebResponseHeadersDetails,
-        fileExtension: broswerNativeFormats): IOnHeadersReceivedResult {
+        fileExtension: broswerNativeFileExtensions): IOnHeadersReceivedResult {
         console.info("%c%s", "color: #2279CB", `Processing the request at url:\n"${details.url}"`);
         const headers = details.responseHeaders;
         headers.map((httpHeader) => {
@@ -161,8 +160,8 @@ class ChromeTools {
                 console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Found ${httpHeader.name}. Header is modified with value ${httpHeader.value}`);
             }
             if (httpHeader.name.toLowerCase() === "Content-Type".toLowerCase()) {
-                httpHeader.value = httpHeader.value.toLowerCase().replace("application/x-forcedownload", `${broswerNativeMIME[fileExtension]}`);
-                httpHeader.value = httpHeader.value.toLowerCase().replace("application/octet-stream", `${broswerNativeMIME[fileExtension]}`);
+                httpHeader.value = httpHeader.value.toLowerCase().replace("application/x-forcedownload", `${broswerNativeFileMIME[fileExtension]}`);
+                httpHeader.value = httpHeader.value.toLowerCase().replace("application/octet-stream", `${broswerNativeFileMIME[fileExtension]}`);
                 console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Found ${httpHeader.name}. Header is modified with value ${httpHeader.value}`);
             }
         });
@@ -258,7 +257,7 @@ class HttpHeader implements IHTttpHeader {
     }
 }
 
-enum broswerNativeFormats {
+enum broswerNativeFileExtensions {
     // documents
     pdf = "pdf",
     // images
@@ -282,7 +281,7 @@ enum broswerNativeFormats {
     html = "html",
     js = "js"
 }
-enum broswerNativeMIME {
+enum broswerNativeFileMIME {
     // documents
     pdf = "application/pdf",
     // images
