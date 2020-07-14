@@ -240,6 +240,22 @@ enum broswerNativeFileMIME {
     html = "text/html",
     js = "text/javascript"
 }
+enum officeFileExtensions {
+    doc = "doc",
+    docx = "docx",
+    xls = "xls",
+    xlsx = "xlsx",
+    ppt = "ppt",
+    pptx = "pptx"
+}
+enum officeFileMIME {
+    doc = "application/msword",
+    docx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls = "application/vnd.ms-excel",
+    xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ppt = "application/vnd.ms-powerpoint",
+    pptx = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+}
 
 const state = new State();
 const chromeTools = new ChromeTools();
