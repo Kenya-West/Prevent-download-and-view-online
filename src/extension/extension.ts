@@ -74,43 +74,7 @@ class ChromeTools {
         chrome.downloads.cancel(downloadItemId, () => { });
     }
 
-    public decideUrl(url1: URL, url2: URL): URL {
-        const urlStart = url1;
-        const urlFinal = url2;
-        console.info(`Detected download of a file. Decide which url is true:\n    url: "${urlStart.href}"\n    or finalUrl: "${urlFinal.href}"`);
-
-        let decidedUrl: URL;
-        if (urlStart && OfficeExtensions.getAll().includes(urlStart.href?.split(".").pop())) { decidedUrl = urlStart; }
-        if (urlFinal && OfficeExtensions.getAll().includes(urlFinal.href?.split(".").pop())) { decidedUrl = urlFinal; }
-        if (urlStart && (Object.values(broswerNativeFormats) as Array<string>).includes(urlStart.href?.split(".").pop())) { decidedUrl = urlStart; }
-        if (urlFinal && (Object.values(broswerNativeFormats) as Array<string>).includes(urlFinal.href?.split(".").pop())) { decidedUrl = urlFinal; }
-
-        return decidedUrl;
-    }
-
-    public findHeaders(details?: chrome.webRequest.WebResponseHeadersDetails): HttpHeader[] {
-        if (details.url.split(".").pop() in broswerNativeFormats) {
-            console.info("%c%s", "color: #2279CB", `Finding headers at url ${details.url}`);
-            const fileExtension = details.url.split(".").pop();
-            const response = {
-                responseHeaders: null
-            };
-            const headers = details.responseHeaders;
-
-            const headersFound: HttpHeader[] = [];
-            headers.map((httpHeader) => {
-                httpHeadersToFind.map((httpHeaderToFind) => {
-                    if (httpHeaderToFind.key === httpHeader.name
-                        && httpHeaderToFind.value === httpHeader.value) {
-                        headersFound.push();
-                    }
-                });
-            });
-            return headersFound;
-        }
-    }
-
-    public recognizeFileExtension(details: chrome.webRequest.WebResponseHeadersDetails): broswerNativeFormats {
+    public recognizeFileExtension(details: chrome.webRequest.WebResponseHeadersDetails): broswerNativeFileExtensions {
         // There are 3 possible ways to find file name and extension
         console.info("%c%s", "color: #2279CB", `Recognizing file extension at url:\n"${details.url}"`);
 
@@ -173,36 +137,6 @@ class ChromeTools {
         return result;
     }
 
-    public fixHeaders(details?: chrome.webRequest.WebResponseHeadersDetails): any {
-        if (details.url.split(".").pop() in broswerNativeFormats) {
-            console.info("%c%s", "color: #2279CB", `Processing the request at url:\n"${details.url}"`);
-            const fileExtension = details.url.split(".").pop();
-            const response = {
-                responseHeaders: null
-            };
-            const headers = details.responseHeaders;
-
-            let modified = false;
-            headers.map((httpHeader) => { // iterate headers
-                if (httpHeader.name === "Content-Disposition" && httpHeader.value.includes("attachment")) {
-                    console.info("%c%s", "color: #2279CB", `Found Content-Disposition. Header is modified`);
-                    httpHeader.value = "inline";
-                    modified = true;
-                }
-                if (httpHeader.name === "Content-Type" && httpHeader.value.includes("application/x-forcedownload")) {
-                    console.info("%c%s", "color: #2279CB", `Found Content-Type. Header is modified`);
-                    httpHeader.value = broswerNativeMIME[fileExtension];
-                    modified = true;
-                }
-            });
-            if (modified) {
-                response.responseHeaders = headers;
-                console.info("%c%s", "color: #2279CB", `Headers are modified compeletely. The response headers are:`);
-                console.info("%c%s", "color: #2279CB", "response.responseHeaders:", response.responseHeaders);
-            }
-            return response;
-        }
-    }
 }
 
 class UrlTools {
@@ -322,32 +256,6 @@ const httpHeadersToFind: HttpHeader[] = [
             valueReplace: "inline"
         })
 ];
-
-// chrome.downloads.onCreated.addListener(downloadItem => {
-//     state?.doNotDownload ?? console.info("%c%s", "color: #D73B02", `Since file is not found, then download it`);
-
-//     if (!state?.doNotDownload) {
-
-//         const decidedUrl = chromeTools.decideUrl(
-//             UrlTools.sanitizeUrl(UrlTools.createUrl(downloadItem.url)),
-//             UrlTools.sanitizeUrl(UrlTools.createUrl(downloadItem.finalUrl))
-//         );
-
-//         console.info(`Decided URL is:\n    "${decidedUrl?.href}"`);
-//         // if they are Office files
-//         if (!decidedUrl?.href?.includes(OfficeOnline.getHost())) {
-//             if (OfficeExtensions.getAll().includes(decidedUrl.href.split(".").pop())) {
-//                 console.info("%c%s", "color: #D73B02", `Recognized an Office file. Cancel download`);
-//                 chromeTools.cancelDownloadAndOpenTab(downloadItem.id, decidedUrl);
-//             }
-//             if ((Object.values(broswerNativeFormats) as Array<string>).includes(decidedUrl.href.split(".").pop())) {
-//                 console.info("%c%s", "color: #D73B02", `Recognized a media file. Cancel download`);
-//                 chromeTools.cancelDownload(downloadItem.id);
-//             }
-//         }
-
-//     }
-// });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (tab.url.includes(OfficeOnline.getHost())) {
