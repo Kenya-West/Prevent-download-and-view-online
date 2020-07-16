@@ -111,6 +111,27 @@ class ChromeTools {
         }
 
     }
+
+    public filterHeaders(details: chrome.webRequest.WebResponseHeadersDetails): boolean {
+        const headers = details.responseHeaders;
+
+        const contentType = headers.find((httpHeader) => httpHeader.name.toLowerCase() === "Content-Type".toLowerCase());
+
+        if (
+            contentType.value.includes("text/html") ||
+            contentType.value.includes("text/css") ||
+            contentType.value.includes("application/json") ||
+            contentType.value.includes("application/javascript") ||
+            contentType.value.includes("text/javascript") ||
+            contentType.value.includes("text/plain") ||
+            contentType.value.includes("text/markdown")
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
     public modifyHeaders(details: chrome.webRequest.WebResponseHeadersDetails,
         fileExtension: broswerNativeFileExtensions | officeFileExtensions): IOnHeadersReceivedResult {
         console.info("%c%s", "color: #2279CB", `Processing the request at url:\n"${details.url}"`);
@@ -337,25 +358,27 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.webRequest.onHeadersReceived.addListener((details) => {
     if (!details.url.includes(OfficeOnline.getHost())) {
-        if (!details.responseHeaders)
-        state.downloader.decidedUrl = null;
+        if (chromeTools.filterHeaders(details)) {
 
-        const fileExtension = chromeTools.recognizeFileExtension(details);
-        console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
-        if (fileExtension in broswerNativeFileExtensions) {
+            state.downloader.decidedUrl = null;
 
-            state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+            const fileExtension = chromeTools.recognizeFileExtension(details);
+            console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
+            if (fileExtension in broswerNativeFileExtensions) {
 
-            return chromeTools.modifyHeaders(details, fileExtension as broswerNativeFileExtensions);
+                state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+
+                return chromeTools.modifyHeaders(details, fileExtension as broswerNativeFileExtensions);
+            }
+            if (fileExtension in officeFileExtensions) {
+
+                state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+                state.downloader.allowDownload = true;
+
+                return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
+            }
+
         }
-        if (fileExtension in officeFileExtensions) {
-
-            state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
-            state.downloader.allowDownload = true;
-
-            return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
-        }
-
     }
     return null;
 
