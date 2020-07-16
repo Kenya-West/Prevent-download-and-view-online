@@ -129,6 +129,16 @@ class ChromeTools {
         return result;
     }
 
+    constructor() {
+
+        chrome.downloads.onCreated.addListener(downloadItem => {
+            if (state.doNotDownload) {
+                this.cancelDownload(downloadItem.id);
+            }
+        });
+
+    }
+
 }
 
 class UrlTools {
