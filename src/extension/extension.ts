@@ -65,7 +65,7 @@ class ChromeTools {
         chrome.downloads.cancel(downloadItemId, () => { });
     }
 
-    public recognizeFileExtension(details: chrome.webRequest.WebResponseHeadersDetails): broswerNativeFileExtensions {
+    public recognizeFileExtension(details: chrome.webRequest.WebResponseHeadersDetails): TFileExtensionResponse {
         // There are 3 possible ways to find file name and extension
         console.info("%c%s", "color: #2279CB", `Recognizing file extension at url:\n"${details.url}"`);
 
@@ -78,22 +78,22 @@ class ChromeTools {
 
         const extension = resultByDetailsUrl || resultByContentDisposition || resultByContentType;
 
-        return broswerNativeFileExtensions[extension];
+        return extension;
 
-        function byDetailsUrl(url: string): string | null {
-            return byFileName(url);
+        function byDetailsUrl(url: string): TFileExtensionResponse | null {
+            return getFileExtensionbyUrl(url);
         }
-        function byContentDisposition(contentDisposition: string): string | null {
+        function byContentDisposition(contentDisposition: string): TFileExtensionResponse | null {
             // https://stackoverflow.com/a/52738125/4846392
             const regex = /filename[^;=\n]*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/i;
             const result = regex.exec(contentDisposition);
-            if (result) { return byFileName(result[3]) || byFileName(result[2]); }
+            if (result) { return getFileExtensionbyString(result[3]) || getFileExtensionbyString(result[2]); }
             return null;
         }
 
-        function byContentType(contentType: string): string | null {
+        function byContentType(contentType: string): TFileExtensionResponse | null {
             const keys = Object.keys(broswerNativeFileMIME).filter((key) => broswerNativeFileMIME[key] === contentType);
-            return keys.length > 0 ? keys[0] : null;
+            return keys.length > 0 ? keys[0] as TFileExtensionResponse : null;
         }
 
         function getFileExtensionbyUrl(url: string): TFileExtensionResponse | null {
@@ -111,7 +111,7 @@ class ChromeTools {
 
     }
     public modifyHeaders(details: chrome.webRequest.WebResponseHeadersDetails,
-        fileExtension: broswerNativeFileExtensions): IOnHeadersReceivedResult {
+        fileExtension: broswerNativeFileExtensions | officeFileExtensions): IOnHeadersReceivedResult {
         console.info("%c%s", "color: #2279CB", `Processing the request at url:\n"${details.url}"`);
         const headers = details.responseHeaders;
         headers.map((httpHeader) => {
@@ -122,6 +122,7 @@ class ChromeTools {
             }
             if (httpHeader.name.toLowerCase() === "Content-Type".toLowerCase()) {
                 httpHeader.value = httpHeader.value.toLowerCase().replace("application/x-forcedownload", `${broswerNativeFileMIME[fileExtension]}`);
+                httpHeader.value = httpHeader.value.toLowerCase().replace("application/forcedownload", `${broswerNativeFileMIME[fileExtension]}`);
                 httpHeader.value = httpHeader.value.toLowerCase().replace("application/octet-stream", `${broswerNativeFileMIME[fileExtension]}`);
                 console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Found ${httpHeader.name}. Header is modified with value ${httpHeader.value}`);
             }
