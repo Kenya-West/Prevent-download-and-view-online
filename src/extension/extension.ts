@@ -159,6 +159,23 @@ class UrlTools {
             throw new Error("Couldn't convert URL");
         }
     }
+
+    public static addUrl(url: URL): URL {
+        return this.getFileExtensionbyUrl(url.href) ? url : null;
+    }
+
+    public static getFileExtensionbyUrl(url: string): TFileExtensionResponse | null {
+        const filePath = UrlTools.sanitizeUrl(UrlTools.createUrl(url)).href.split(".").pop();
+        const fileExtension = broswerNativeFileExtensions[filePath] || officeFileExtensions[filePath];
+        return fileExtension;
+    }
+
+    public static getFileExtensionbyString(fileName: string): TFileExtensionResponse | null {
+        const fileExtension: TFileExtensionResponse = Object.values(broswerNativeFileExtensions).find((FileExtension) => {
+            return fileName.includes(fileExtension);
+        });
+        return fileExtension;
+    }
 }
 
 interface IHTttpHeader {
@@ -316,10 +333,20 @@ chrome.webRequest.onHeadersReceived.addListener((details) => {
     const fileExtension = chromeTools.recognizeFileExtension(details);
     console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
     if (fileExtension in broswerNativeFileExtensions) {
+
+        if (!state.downloader.decidedUrl) {
+            state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+        }
+
         return chromeTools.modifyHeaders(details, fileExtension as broswerNativeFileExtensions);
     }
     if (fileExtension in officeFileExtensions) {
+
+        if (!state.downloader.decidedUrl) {
+            state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+        }
         state.downloader.doNotDownload = true;
+
         return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
     }
     return null;
