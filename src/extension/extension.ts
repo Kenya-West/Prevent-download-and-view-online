@@ -88,32 +88,19 @@ class ChromeTools {
         return extension;
 
         function byDetailsUrl(url: string): TFileExtensionResponse | null {
-            return getFileExtensionbyUrl(url);
+            return UrlTools.getFileExtensionbyUrl(url);
         }
         function byContentDisposition(contentDisposition: string): TFileExtensionResponse | null {
             // https://stackoverflow.com/a/52738125/4846392
             const regex = /filename[^;=\n]*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/i;
             const result = regex.exec(contentDisposition);
-            if (result) { return getFileExtensionbyString(result[3]) || getFileExtensionbyString(result[2]); }
+            if (result) { return UrlTools.getFileExtensionbyString(result[3]) || UrlTools.getFileExtensionbyString(result[2]); }
             return null;
         }
 
         function byContentType(contentType: string): TFileExtensionResponse | null {
             const keys = Object.keys(broswerNativeFileMIME).filter((key) => broswerNativeFileMIME[key] === contentType);
             return keys.length > 0 ? keys[0] as TFileExtensionResponse : null;
-        }
-
-        function getFileExtensionbyUrl(url: string): TFileExtensionResponse | null {
-            const filePath = UrlTools.sanitizeUrl(UrlTools.createUrl(url)).href.split(".").pop();
-            const fileExtension = broswerNativeFileExtensions[filePath] || officeFileExtensions[filePath];
-            return fileExtension;
-        }
-
-        function getFileExtensionbyString(fileName: string): TFileExtensionResponse | null {
-            const fileExtension: TFileExtensionResponse = Object.values(broswerNativeFileExtensions).find((FileExtension) => {
-                return fileName.includes(fileExtension);
-            });
-            return fileExtension;
         }
 
     }
