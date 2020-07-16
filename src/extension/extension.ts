@@ -96,12 +96,17 @@ class ChromeTools {
             return keys.length > 0 ? keys[0] : null;
         }
 
-        function byFileName(url: string): string | null {
-            const fileExtension = UrlTools.sanitizeUrl(UrlTools.createUrl(url)).href.split(".").pop();
-            if (fileExtension in broswerNativeFileExtensions) {
-                return fileExtension;
-            }
-            return null;
+        function getFileExtensionbyUrl(url: string): TFileExtensionResponse | null {
+            const filePath = UrlTools.sanitizeUrl(UrlTools.createUrl(url)).href.split(".").pop();
+            const fileExtension = broswerNativeFileExtensions[filePath] || officeFileExtensions[filePath];
+            return fileExtension;
+        }
+
+        function getFileExtensionbyString(fileName: string): TFileExtensionResponse | null {
+            const fileExtension: TFileExtensionResponse = Object.values(broswerNativeFileExtensions).find((FileExtension) => {
+                return fileName.includes(fileExtension);
+            });
+            return fileExtension;
         }
 
     }
