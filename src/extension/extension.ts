@@ -315,8 +315,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.webRequest.onHeadersReceived.addListener((details) => {
     const fileExtension = chromeTools.recognizeFileExtension(details);
     console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
-    if (fileExtension) {
-        return chromeTools.modifyHeaders(details, fileExtension);
+    if (fileExtension in broswerNativeFileExtensions) {
+        return chromeTools.modifyHeaders(details, fileExtension as broswerNativeFileExtensions);
+    }
+    if (fileExtension in officeFileExtensions) {
+        state.doNotDownload = true;
+        return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
     }
     return null;
 
