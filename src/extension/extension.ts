@@ -85,9 +85,9 @@ class ChromeTools {
 
         const resultByDetailsUrl = byDetailsUrl(details.url);
         console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Result by details.url is: ${resultByDetailsUrl}`);
-        const resultByContentDisposition = byContentDisposition(details.responseHeaders.find(header => header.name === "content-disposition")?.value);
+        const resultByContentDisposition = byContentDisposition(details.responseHeaders.find(header => header.name.toLowerCase() === "content-disposition")?.value);
         console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Result by details.responseHeaders.content-disposition is: ${resultByContentDisposition}`);
-        const resultByContentType = byContentType(details.responseHeaders.find(header => header.name === "content-type")?.value);
+        const resultByContentType = byContentType(details.responseHeaders.find(header => header.name.toLowerCase() === "content-type")?.value);
         console.info("%c%s", "padding-left: 2rem; color: #2279CB", `Result by details.responseHeaders.content-type is: ${resultByContentType}`);
 
         const extension = resultByDetailsUrl || resultByContentDisposition || resultByContentType;
