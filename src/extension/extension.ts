@@ -58,12 +58,19 @@ class OfficeOnline {
 }
 
 class ChromeTools {
-    public cancelDownloadAndOpenTab(downloadId: number, url: URL): void {
-        chrome.downloads.cancel(downloadId, () => {
-            chrome.tabs.create({ url: OfficeOnline.getUrl() + url.href }, (tab) => {
+    public cancelDownloadAndOpenTab(downloadItem: chrome.downloads.DownloadItem, url: URL): void {
+        if (!url) {
+            state.downloader.decidedUrl =
+                UrlTools.addUrl(UrlTools.createUrl(downloadItem.url)) ||
+                UrlTools.addUrl(UrlTools.createUrl(downloadItem.finalUrl));
+        }
+
+        chrome.downloads.cancel(downloadItem.id, () => {
+            chrome.tabs.create({ url: OfficeOnline.getUrl() + state.downloader.decidedUrl.href }, (tab) => {
                 console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
                 state.officeOnline.fileUrl = url.href;
-                state.downloader.doNotDownload = false;
+                state.downloader.allowDownload = false;
+                state.downloader.decidedUrl = null;
             });
         });
     }
@@ -329,25 +336,26 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.webRequest.onHeadersReceived.addListener((details) => {
-    const fileExtension = chromeTools.recognizeFileExtension(details);
-    console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
-    if (fileExtension in broswerNativeFileExtensions) {
+    if (!details.url.includes(OfficeOnline.getHost())) {
+        if (!details.responseHeaders)
+        state.downloader.decidedUrl = null;
 
-        if (!state.downloader.decidedUrl) {
+        const fileExtension = chromeTools.recognizeFileExtension(details);
+        console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
+        if (fileExtension in broswerNativeFileExtensions) {
+
             state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+
+            return chromeTools.modifyHeaders(details, fileExtension as broswerNativeFileExtensions);
         }
+        if (fileExtension in officeFileExtensions) {
 
-        return chromeTools.modifyHeaders(details, fileExtension as broswerNativeFileExtensions);
-    }
-    if (fileExtension in officeFileExtensions) {
-
-        if (!state.downloader.decidedUrl) {
             state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
             state.downloader.allowDownload = true;
-        }
-        state.downloader.doNotDownload = true;
 
-        return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
+            return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
+        }
+
     }
     return null;
 
