@@ -1,6 +1,6 @@
 class State {
     downloader: {
-        doNotDownload: boolean;
+        allowDownload: boolean;
         decidedUrl: URL;
     };
     officeOnline: {
@@ -15,7 +15,7 @@ class State {
             fileUrl: ""
         };
         this.downloader = {
-            doNotDownload: false,
+            allowDownload: false,
             decidedUrl: null
         };
         this.nativeOpener = {
@@ -132,8 +132,7 @@ class ChromeTools {
     constructor() {
 
         chrome.downloads.onCreated.addListener(downloadItem => {
-            if (state.downloader.doNotDownload) {
-                this.cancelDownload(downloadItem.id);
+            if (!state.downloader.allowDownload) {
             }
         });
 
@@ -303,7 +302,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
                 const url = UrlTools.createUrl(changeInfo?.url);
                 if (url?.searchParams?.get("src")) {
                     state.officeOnline.fileUrl = url.searchParams.get("src");
-                    state.downloader.doNotDownload = false;
+                    state.downloader.allowDownload = false;
                     console.info("%c%s", "color: #D73B02", `Found a link for file displaying:\n"${state.officeOnline.fileUrl}"`);
                 } else {
                     console.info("%c%s", "color: #D73B02", `changeInfo?.url is:\n"${changeInfo?.url}"`);
@@ -312,13 +311,13 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
                 console.warn(`changeInfo.url is not valid at path:\n"${changeInfo?.url}"`);
             }
         } else if (changeInfo?.url?.includes(OfficeOnline.getNotFoundUrl())) {
-            state.downloader.doNotDownload = true;
+            state.downloader.allowDownload = true;
             if (state.officeOnline.fileUrl) {
                 console.info("%c%s", "color: #D73B02", `The file on URL:\n"${state.officeOnline.fileUrl}"\nis not available, attempting to download`);
                 chrome.downloads.download({
                     url: state.officeOnline.fileUrl
                 }, (downloadId) => {
-                    state.downloader.doNotDownload = false;
+                    state.downloader.allowDownload = false;
                 });
             } else {
                 console.warn(`No link to download!`);
@@ -344,6 +343,7 @@ chrome.webRequest.onHeadersReceived.addListener((details) => {
 
         if (!state.downloader.decidedUrl) {
             state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+            state.downloader.allowDownload = true;
         }
         state.downloader.doNotDownload = true;
 
