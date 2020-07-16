@@ -105,7 +105,7 @@ class ChromeTools {
 
     }
     public modifyHeaders(details: chrome.webRequest.WebResponseHeadersDetails,
-                         fileExtension: broswerNativeFileExtensions | officeFileExtensions): IOnHeadersReceivedResult {
+        fileExtension: broswerNativeFileExtensions | officeFileExtensions): IOnHeadersReceivedResult {
         console.info("%c%s", "color: #2279CB", `Processing the request at url:\n"${details.url}"`);
         const headers = details.responseHeaders;
         headers.map((httpHeader) => {
@@ -133,7 +133,7 @@ class ChromeTools {
 
         chrome.downloads.onCreated.addListener(downloadItem => {
             if (state.downloader.doNotDownload) {
-                this.cancelDownloadAndOpenTab(downloadItem.id);
+                this.cancelDownload(downloadItem.id);
             }
         });
 
