@@ -1,15 +1,15 @@
 class State {
-    fileUrl: string;
     doNotDownload: boolean;
-    tabId: number;
+    officeOnline: {
+        fileUrl: string;
+    };
     nativeOpener: {
         pdf: boolean;
     };
 
     constructor() {
-        this.fileUrl = "";
+        this.officeOnline.fileUrl = "";
         this.doNotDownload = false;
-        this.tabId = 0;
         this.nativeOpener = {
             pdf: false
         };
@@ -54,8 +54,7 @@ class ChromeTools {
         chrome.downloads.cancel(downloadId, () => {
             chrome.tabs.create({ url: OfficeOnline.getUrl() + url.href }, (tab) => {
                 console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
-                state.tabId = tab.id;
-                state.fileUrl = url.href;
+                state.officeOnline.fileUrl = url.href;
                 state.doNotDownload = false;
             });
         });
@@ -139,7 +138,7 @@ class ChromeTools {
 
         chrome.downloads.onCreated.addListener(downloadItem => {
             if (state.doNotDownload) {
-                this.cancelDownload(downloadItem.id);
+                this.cancelDownloadAndOpenTab(downloadItem.id);
             }
         });
 
@@ -291,9 +290,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             try {
                 const url = UrlTools.createUrl(changeInfo?.url);
                 if (url?.searchParams?.get("src")) {
-                    state.fileUrl = url.searchParams.get("src");
+                    state.officeOnline.fileUrl = url.searchParams.get("src");
                     state.doNotDownload = false;
-                    console.info("%c%s", "color: #D73B02", `Found a link for file displaying:\n"${state.fileUrl}"`);
+                    console.info("%c%s", "color: #D73B02", `Found a link for file displaying:\n"${state.officeOnline.fileUrl}"`);
                 } else {
                     console.info("%c%s", "color: #D73B02", `changeInfo?.url is:\n"${changeInfo?.url}"`);
                 }
@@ -302,10 +301,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             }
         } else if (changeInfo?.url?.includes(OfficeOnline.getNotFoundUrl())) {
             state.doNotDownload = true;
-            if (state.fileUrl) {
-                console.info("%c%s", "color: #D73B02", `The file on URL:\n"${state.fileUrl}"\nis not available, attempting to download`);
+            if (state.officeOnline.fileUrl) {
+                console.info("%c%s", "color: #D73B02", `The file on URL:\n"${state.officeOnline.fileUrl}"\nis not available, attempting to download`);
                 chrome.downloads.download({
-                    url: state.fileUrl
+                    url: state.officeOnline.fileUrl
                 }, (downloadId) => {
                     state.doNotDownload = false;
                 });
