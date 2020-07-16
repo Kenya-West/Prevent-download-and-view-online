@@ -1,7 +1,7 @@
 class State {
     downloader: {
         doNotDownload: boolean;
-        decidedUrl: string;
+        decidedUrl: URL;
     };
     officeOnline: {
         fileUrl: string;
@@ -16,7 +16,7 @@ class State {
         };
         this.downloader = {
             doNotDownload: false,
-            decidedUrl: ""
+            decidedUrl: null
         };
         this.nativeOpener = {
             pdf: false
