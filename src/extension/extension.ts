@@ -173,6 +173,8 @@ interface IOnHeadersReceivedResult {
     responseHeaders: chrome.webRequest.HttpHeader[];
 }
 
+type TFileExtensionResponse = broswerNativeFileExtensions | officeFileExtensions;
+
 class HttpHeader implements IHTttpHeader {
     key: string;
     value: string;
