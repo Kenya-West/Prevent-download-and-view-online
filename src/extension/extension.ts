@@ -50,24 +50,15 @@ class OfficeOnline {
 }
 
 class ChromeTools {
-    public cancelDownloadAndOpenTab(downloadItemId: number, url: URL, media?: boolean): void {
-        if (!media) {
-            chrome.downloads.cancel(downloadItemId, () => {
-                chrome.tabs.create({ url: OfficeOnline.getUrl() + url.href }, (tab) => {
-                    console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
-                    state.tabId = tab.id;
-                    state.fileUrl = url.href;
-                    state.doNotDownload = false;
-                });
+    public cancelDownloadAndOpenTab(downloadId: number, url: URL): void {
+        chrome.downloads.cancel(downloadId, () => {
+            chrome.tabs.create({ url: OfficeOnline.getUrl() + url.href }, (tab) => {
+                console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
+                state.tabId = tab.id;
+                state.fileUrl = url.href;
+                state.doNotDownload = false;
             });
-        } else {
-            chrome.downloads.cancel(downloadItemId, () => {
-                chrome.tabs.create({ url: url.href }, (tab) => {
-                    console.info(`Create a tab for native browser media file with id: ${tab.id}`);
-                    state.doNotDownload = false;
-                });
-            });
-        }
+        });
     }
 
     public cancelDownload(downloadItemId: number): void {
