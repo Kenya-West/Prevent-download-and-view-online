@@ -10,8 +10,12 @@ class State {
     };
 
     constructor() {
-        this.officeOnline.fileUrl = "";
-        this.downloader.doNotDownload = false;
+        this.officeOnline = {
+            fileUrl: ""
+        };
+        this.downloader = {
+            doNotDownload: false
+        };
         this.nativeOpener = {
             pdf: false
         };
@@ -112,7 +116,7 @@ class ChromeTools {
 
     }
     public modifyHeaders(details: chrome.webRequest.WebResponseHeadersDetails,
-        fileExtension: broswerNativeFileExtensions | officeFileExtensions): IOnHeadersReceivedResult {
+                         fileExtension: broswerNativeFileExtensions | officeFileExtensions): IOnHeadersReceivedResult {
         console.info("%c%s", "color: #2279CB", `Processing the request at url:\n"${details.url}"`);
         const headers = details.responseHeaders;
         headers.map((httpHeader) => {
