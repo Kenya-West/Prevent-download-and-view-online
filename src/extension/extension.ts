@@ -161,6 +161,7 @@ class ChromeTools {
 
         chrome.downloads.onCreated.addListener(downloadItem => {
             if (!state.downloader.allowDownload) {
+                this.cancelDownloadAndOpenTab(downloadItem, state.downloader.decidedUrl);
             }
         });
 
