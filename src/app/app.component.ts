@@ -6,5 +6,5 @@ import { Component } from "@angular/core";
   styleUrls: ["./app.component.scss"]
 })
 export class AppComponent {
-  title = "prevent-download-and-open-in-office-online";
+  title = "prevent-download-and-view-online";
 }

@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "prevent-download-and-open-in-office-online": {
+    "prevent-download-and-view-online": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/prevent-download-and-open-in-office-online",
+            "outputPath": "dist/prevent-download-and-view-online",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -67,18 +67,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "prevent-download-and-open-in-office-online:build"
+            "browserTarget": "prevent-download-and-view-online:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "prevent-download-and-open-in-office-online:build:production"
+              "browserTarget": "prevent-download-and-view-online:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "prevent-download-and-open-in-office-online:build"
+            "browserTarget": "prevent-download-and-view-online:build"
           }
         },
         "test": {
@@ -115,18 +115,18 @@
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
             "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "prevent-download-and-open-in-office-online:serve"
+            "devServerTarget": "prevent-download-and-view-online:serve"
           },
           "configurations": {
             "production": {
-              "devServerTarget": "prevent-download-and-open-in-office-online:serve:production"
+              "devServerTarget": "prevent-download-and-view-online:serve:production"
             }
           }
         }
       }
     }
   },
-  "defaultProject": "prevent-download-and-open-in-office-online",
+  "defaultProject": "prevent-download-and-view-online",
   "cli": {
     "analytics": "b6ae7a38-ca6c-4ce9-974c-107cb4d554a2"
   }
