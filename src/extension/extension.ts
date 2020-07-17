@@ -172,6 +172,12 @@ class ChromeTools {
         chrome.downloads.onCreated.addListener(downloadItem => {
             if (!state.downloader.allowDownload) {
                 this.cancelDownloadAndOpenTab(downloadItem, state.downloader.decidedUrl);
+                chrome.tabs.getCurrent((tab) => {
+                    console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
+                    state.officeOnline.fileUrl = tab?.url;
+                });
+                state.downloader.allowDownload = false;
+                state.downloader.decidedUrl = null;
             }
         });
 
