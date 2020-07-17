@@ -199,10 +199,13 @@ class UrlTools {
     }
 
     public static getFileExtensionbyString(fileName: string): TFileExtensionResponse | null {
-        const fileExtension: TFileExtensionResponse = Object.values(broswerNativeFileExtensions).find((FileExtension) => {
-            return fileName.includes(fileExtension);
-        });
-        return fileExtension;
+        if (fileName) {
+            const fileExtension: TFileExtensionResponse = Object.values(broswerNativeFileExtensions).find((extension) => {
+                return fileName.includes(extension);
+            });
+            return fileExtension;
+        }
+        return null;
     }
 }
 
