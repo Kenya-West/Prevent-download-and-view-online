@@ -378,7 +378,7 @@ chrome.webRequest.onHeadersReceived.addListener((details) => {
             if (fileExtension in officeFileExtensions) {
 
                 state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
-                state.downloader.allowDownload = true;
+                state.downloader.decidedUrl ? state.downloader.allowDownload = false : state.downloader.allowDownload = true;
 
                 return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
             }
