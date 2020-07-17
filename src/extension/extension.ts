@@ -81,6 +81,14 @@ class ChromeTools {
         chrome.downloads.cancel(downloadItemId, () => { });
     }
 
+    public download(options: chrome.downloads.DownloadOptions, tabOptions?: ITabOptions) {
+        chrome.downloads.download(options, (downloadId) => {
+            state.downloader.allowDownload = false;
+            if (tabOptions) {
+                this.tabAction(tabOptions);
+            }
+        });
+    }
     public recognizeFileExtension(details: chrome.webRequest.WebResponseHeadersDetails): TFileExtensionResponse {
         // There are 3 possible ways to find file name and extension
         console.info("%c%s", "color: #2279CB", `Recognizing file extension at url:\n"${details.url}"`);
@@ -221,6 +229,20 @@ interface IHTttpHeader {
 
 interface IOnHeadersReceivedResult {
     responseHeaders: chrome.webRequest.HttpHeader[];
+}
+
+interface ITabOptions {
+    tabAction: TabActions;
+    tabId?: number;
+    tabData?: {
+        url: string;
+    };
+}
+
+enum TabActions {
+    open,
+    close,
+    refresh
 }
 
 type TFileExtensionResponse = broswerNativeFileExtensions | officeFileExtensions;
