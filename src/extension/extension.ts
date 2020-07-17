@@ -58,23 +58,27 @@ class OfficeOnline {
 }
 
 class ChromeTools {
-    public cancelDownloadAndOpenTab(downloadItem: chrome.downloads.DownloadItem, url: URL): void {
+    public cancelDownloadAndOpenTab(downloadItem: chrome.downloads.DownloadItem, url: URL) {
+
         if (!url) {
             state.downloader.decidedUrl =
                 UrlTools.addUrl(UrlTools.createUrl(downloadItem.url)) ||
                 UrlTools.addUrl(UrlTools.createUrl(downloadItem.finalUrl));
         }
 
-        if (!state.downloader.decidedUrl) {
+        if (state.downloader.decidedUrl) {
             chrome.downloads.cancel(downloadItem.id, () => {
-                chrome.tabs.create({ url: OfficeOnline.getUrl() + state.downloader.decidedUrl.href }, (tab) => {
-                    console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
-                    state.officeOnline.fileUrl = url.href;
-                    state.downloader.allowDownload = false;
-                    state.downloader.decidedUrl = null;
+                this.tabAction({
+                    tabAction: TabActions.open,
+                    tabData: {
+                        url: OfficeOnline.getUrl() + state.downloader.decidedUrl.href
+                    }
                 });
+
             });
+
         }
+
     }
 
     public cancelDownload(downloadItemId: number): void {
@@ -89,6 +93,20 @@ class ChromeTools {
             }
         });
     }
+
+    public tabAction(tabOptions: ITabOptions) {
+        switch (tabOptions.tabAction) {
+            case TabActions.close:
+                chrome.tabs.remove(tabOptions.tabId);
+                break;
+            case TabActions.open:
+                chrome.tabs.create({ url: tabOptions.tabData.url } );
+                break;
+            default:
+                break;
+        }
+    }
+
     public recognizeFileExtension(details: chrome.webRequest.WebResponseHeadersDetails): TFileExtensionResponse {
         // There are 3 possible ways to find file name and extension
         console.info("%c%s", "color: #2279CB", `Recognizing file extension at url:\n"${details.url}"`);
@@ -384,12 +402,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             state.downloader.allowDownload = true;
             if (state.officeOnline.fileUrl) {
                 console.info("%c%s", "color: #D73B02", `The file on URL:\n"${state.officeOnline.fileUrl}"\nis not available, attempting to download`);
-                chrome.downloads.download({
-                    url: state.officeOnline.fileUrl
-                }, (downloadId) => {
-                    chrome.tabs.remove(tabId);
-                    state.downloader.allowDownload = false;
-                });
+                chromeTools.download({ url: state.officeOnline.fileUrl }, { tabAction: TabActions.close, tabId: tabId });
+                state.downloader.allowDownload = false;
             } else {
                 console.warn(`No link to download!`);
             }
