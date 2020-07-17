@@ -44,8 +44,8 @@ class OfficeOnline {
         return "https://" + this.strOfficeHost + this.strViewOfficeUrl;
     }
 
-    public static getHost(): string {
-        return "https://" + this.strOfficeHost;
+    public static getHost(protocolIncluded?: boolean): string {
+        return protocolIncluded ? "https://" + this.strOfficeHost : this.strOfficeHost;
     }
 
     public static getOpenedUrlPart(): string {
