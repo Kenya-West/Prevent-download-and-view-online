@@ -245,6 +245,14 @@ enum TabActions {
     refresh
 }
 
+interface ICancelDownloadAndOpenTabResult {
+    tabId: number;
+}
+
+interface ITabActionResult {
+    tabId: number;
+}
+
 type TFileExtensionResponse = broswerNativeFileExtensions | officeFileExtensions;
 
 class HttpHeader implements IHTttpHeader {
