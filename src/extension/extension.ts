@@ -364,28 +364,37 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.webRequest.onHeadersReceived.addListener((details) => {
-    if (!details.url.includes(OfficeOnline.getHost())) {
-        if (chromeTools.filterHeaders(details)) {
+    // if it does not happen on Office Online Viewer
+    if (!details.initiator || !details.initiator.includes(OfficeOnline.getHost(false))) {
+        // if it is not downloaded from Office Online Viewer
+        if (!details.url.includes(OfficeOnline.getHost(false))) {
+            // if it does not load HTML page and its contents
+            if (chromeTools.filterHeaders(details)) {
 
-            state.downloader.decidedUrl = null;
+                state.downloader.decidedUrl = null;
 
-            const fileExtension = chromeTools.recognizeFileExtension(details);
-            console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
-            if (fileExtension in broswerNativeFileExtensions) {
+                const fileExtension = chromeTools.recognizeFileExtension(details);
+                console.info("%c%s", "color: #2279CB", `Searched for file extension. Got: "${fileExtension}"`);
+                if (fileExtension in broswerNativeFileExtensions) {
 
-                state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+                    state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
 
-                return chromeTools.modifyHeaders(details, fileExtension as broswerNativeFileExtensions);
+                    return chromeTools.modifyHeaders(details, fileExtension as broswerNativeFileExtensions);
+                }
+                if (fileExtension in officeFileExtensions) {
+
+                    state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
+                    state.downloader.decidedUrl ? state.downloader.allowDownload = false : state.downloader.allowDownload = true;
+
+                    return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
+                }
+
             }
-            if (fileExtension in officeFileExtensions) {
-
-                state.downloader.decidedUrl = UrlTools.addUrl(UrlTools.createUrl(details.url));
-                state.downloader.decidedUrl ? state.downloader.allowDownload = false : state.downloader.allowDownload = true;
-
-                return chromeTools.modifyHeaders(details, fileExtension as officeFileExtensions);
-            }
-
+        } else {
+            state.downloader.allowDownload = true;
         }
+    } else if (details.initiator?.includes(OfficeOnline.getHost(false))) {
+        state.downloader.allowDownload = true;
     }
     return null;
 
