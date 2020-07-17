@@ -349,6 +349,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
                 chrome.downloads.download({
                     url: state.officeOnline.fileUrl
                 }, (downloadId) => {
+                    chrome.tabs.remove(tabId);
                     state.downloader.allowDownload = false;
                 });
             } else {
