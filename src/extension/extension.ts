@@ -65,14 +65,16 @@ class ChromeTools {
                 UrlTools.addUrl(UrlTools.createUrl(downloadItem.finalUrl));
         }
 
-        chrome.downloads.cancel(downloadItem.id, () => {
-            chrome.tabs.create({ url: OfficeOnline.getUrl() + state.downloader.decidedUrl.href }, (tab) => {
-                console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
-                state.officeOnline.fileUrl = url.href;
-                state.downloader.allowDownload = false;
-                state.downloader.decidedUrl = null;
+        if (!state.downloader.decidedUrl) {
+            chrome.downloads.cancel(downloadItem.id, () => {
+                chrome.tabs.create({ url: OfficeOnline.getUrl() + state.downloader.decidedUrl.href }, (tab) => {
+                    console.info("%c%s", "color: #D73B02", `Create a tab for Office file with id: ${tab.id}`);
+                    state.officeOnline.fileUrl = url.href;
+                    state.downloader.allowDownload = false;
+                    state.downloader.decidedUrl = null;
+                });
             });
-        });
+        }
     }
 
     public cancelDownload(downloadItemId: number): void {
